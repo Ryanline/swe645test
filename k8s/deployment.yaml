@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-webapp-deployment
+  labels:
+    app: simple-webapp
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: simple-webapp
+  template:
+    metadata:
+      labels:
+        app: simple-webapp
+    spec:
+      containers:
+        - name: simple-webapp
+          image: ryanline/simple-webapp:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
