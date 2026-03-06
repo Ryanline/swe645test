@@ -1,8 +1,102 @@
-# SWE 645 – Assignment 1
+# SWE 645 - Assignment 2
 
 Ryan Brooks  
 SWE 645  
 Dr. Dubey
+
+## Overview
+
+This assignment containerizes the Assignment 1 static website, deploys it to Kubernetes on EC2, and automates build/push/deploy with Jenkins.
+
+Project components:
+- Docker image: `ryanline/simple-webapp:latest`
+- Kubernetes manifests: `k8s/deployment.yaml`, `k8s/service.yaml`
+- Jenkins pipeline: `Jenkinsfile`
+
+## Installation and Setup
+
+### Prerequisites
+
+- AWS EC2 Ubuntu instance
+- Docker installed on the host/Jenkins node
+- Kubernetes cluster access from the host (`kubectl` configured)
+- Jenkins installed with Docker and Pipeline support
+- Docker Hub account and credentials stored in Jenkins (`docker-pass`)
+- Git installed
+
+### Local Project Setup
+
+```bash
+git clone https://github.com/Ryanline/swe645test.git
+cd swe645test
+```
+
+### Build and Push Docker Image Manually (Optional Verification)
+
+```bash
+docker build -t ryanline/simple-webapp:latest .
+docker login
+docker push ryanline/simple-webapp:latest
+```
+
+## Kubernetes Deployment Details
+
+Kubernetes files are located in `k8s/`.
+
+- `k8s/deployment.yaml`
+  - Creates `simple-webapp-deployment`
+  - Uses image `ryanline/simple-webapp:latest`
+  - Runs 3 replicas
+  - Exposes container port `80`
+- `k8s/service.yaml`
+  - Creates NodePort service `my-service`
+  - Maps service port `80` to target port `80`
+  - Exposes NodePort `30007`
+
+### Deploy to Kubernetes
+
+```bash
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
+
+### Validate Deployment
+
+```bash
+kubectl get deployments
+kubectl get pods -o wide
+kubectl get svc
+kubectl rollout status deployment/simple-webapp-deployment
+```
+
+Access pattern:
+- `http://<EC2_PUBLIC_IP>:30007`
+
+Security group note:
+- Ensure inbound TCP `30007` is allowed (or NodePort range `30000-32767`).
+
+## CI/CD Pipeline Details (Jenkins)
+
+The `Jenkinsfile` defines a pipeline with these stages:
+
+1. `Checkout`
+   - Pulls branch `main` from `https://github.com/Ryanline/swe645test.git`
+2. `Build Docker Image`
+   - Builds `ryanline/simple-webapp:latest`
+3. `Push to Docker Hub`
+   - Pushes the image to Docker Hub using Jenkins credential `docker-pass`
+4. `Deploy to Kubernetes`
+   - Updates deployment image with:
+     - `kubectl set image deployment/simple-webapp-deployment simple-webapp=ryanline/simple-webapp:latest`
+   - Waits for rollout completion with:
+     - `kubectl rollout status deployment/simple-webapp-deployment`
+
+Pipeline outcome:
+- On successful runs, Kubernetes is updated to the latest container image version.
+- On failure, Jenkins marks the build failed and deployment is not considered complete.
+
+
+# SWE 645 – Assignment 1
 
 ## URLs:
 
